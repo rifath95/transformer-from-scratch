@@ -28,6 +28,7 @@ class Multi_Headed_Latent_Attention(nn.Module):
         
         self.mix   = nn.Linear(d_hidden, d_hidden, bias=False)
         self.mix.residual = True
+        # self.register_buffer("tril", torch.tril(torch.ones(block_size,block_size)))
         self.drop  = nn.Dropout(dropout)
 
         m = torch.arange(d_rope//2, dtype=torch.float32) # [d_rope/2]
@@ -111,8 +112,14 @@ class Multi_Headed_Latent_Attention(nn.Module):
         # share key_rope across heads and concat with key_nope to get key
         key_rope = key_rope.expand(-1,n_heads,-1,-1)  # [B,n_heads(rep),T_k,d_rope] (! No more inplace writes on this hereafter)
         key = torch.cat((key_nope,key_rope),dim=-1) # [B,n_heads,T_k,d_nope] cat [B,n_heads,T_k,d_rope] = [B,n_heads,T_k,d_nope+d_rope=d_head]
+        
+        # wei = query @ key.transpose(-1,-2) * d_head**-0.5   # [B,n_heads,T of query,T of key] # scaled attention [To control variance]
+        # wei = wei.masked_fill(self.tril[:T,:T]==0, float('-inf'))
+        # wei = F.softmax(wei,-1)
+        # wei = self.drop(wei)
+        # attn = wei @ value
 
-        # Flash attention 
+        # Flash attention (torch.compile doesn't know how to fuse the above 5 operations of attention and so the below does that) # [speedup] useless for mps
         if position_id is None: # training or prefill
             attn = F.scaled_dot_product_attention(query, key, value, is_causal=True) # do as usual with causal mask in train and prefil phase
         else: # decode

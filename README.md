@@ -52,7 +52,7 @@ Encodes positional information directly into attention via rotation in embedding
 Reduces KV cache memory by sharing key/value projections across groups of query heads.
 
 ### Latent Key/Value Representations
-Projects keys and values into a lower-dimensional latent space to reduce memory usage during inference.
+Projects hidden states into a lower-dimensional latent space and computes keys and values from that representation to reduce KV cache memory during inference.
 
 ### Mixture-of-Experts (MoE)
 Implements a sparse MoE layer with:

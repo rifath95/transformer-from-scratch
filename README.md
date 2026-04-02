@@ -64,6 +64,49 @@ Implements a sparse MoE layer with:
 
 This project was built to understand and implement modern large language model architectures from first principles, without relying on high-level abstractions.
 
+## Sample Output
+
+After training on `input_mod.txt` using character-level tokens, the model generated:
+
+*Note: This sample is from a short 500-step training run (~10 minutes) for demonstration purposes. The model has not converged; longer training will yield higher-quality generations.*
+
+```text
+First Warwick and all the demands of her lives,
+Which had not promised us and most deserve.
+
+Boy:
+But say'st we are lion, and will not confirm
+Than a daughter's walk floucester, with his hand,
+Than he store father and the counterior,
+By that minate duke may be seen to sleep:
+The nuptial dalm, or white we may be set encomplexion,
+Thou hadst pull up his sweet soldier and dug as welcome.
+
+ANGELO:
+She had a foot, now my gentle give better
+Which the power dugs and trumpets the flatter than
+To Warwick, that devices stood my face elter.
+
+AUFIDIUS:
+I have a word of light up that repeal thought,
+To unruly never walls have been him for me.
+
+ROMEO:
+At God.
+
+Gross:
+How should say the senator, the gates like,
+For this accusation by the city, and be sight;
+Who, that we'll we have thee day from Juliet,
+Where thou swear from his past in thing and bed
+The kindness but they have fresh before the ramp.
+
+STANLEY:
+O lay to chide where he shall know the crown
+Against the truth: I do there that I have
+Is thy
+```
+
 ## Future Improvements
 
 - Add training loss plots

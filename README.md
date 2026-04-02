@@ -110,8 +110,8 @@ Is thy
 ## Training Dynamics
 
 <p align="center">
-  <img src="assets/training_loss.png" width="45%" />
-  <img src="assets/learning_rate.png" width="45%" />
+  <img src="docs/training_loss.png" width="45%" />
+  <img src="docs/learning_rate.png" width="45%" />
 </p>
 
 ## Future Improvements

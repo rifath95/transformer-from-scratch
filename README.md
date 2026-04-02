@@ -116,6 +116,5 @@ Is thy
 
 ## Future Improvements
 
-- Add training loss plots
-- Add sample outputs
-- Extend to larger datasets and models
+- Train on larger datasets
+- Scale model size and context length

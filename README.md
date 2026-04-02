@@ -66,7 +66,7 @@ This project was built to understand and implement modern large language model a
 
 ## Sample Output
 
-After training on `input_mod.txt` using character-level tokens, the model generated:
+After training on `tinyShakespeare.txt` using character-level tokens, the model generated:
 
 *Note: This sample is from a short 500-step training run (~10 minutes) for demonstration purposes. The model has not converged; longer training will yield higher-quality generations.*
 

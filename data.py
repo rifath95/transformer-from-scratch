@@ -1,3 +1,5 @@
+import torch
+
 # Opening the dataset and text is a long string
 with open('input_mod.txt', 'r', encoding='utf-8') as f:
     text = f.read()

@@ -59,7 +59,10 @@ lrs = []
 
 for epoch in range(n_epoch):
     
-    torch.mps.synchronize()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+    elif torch.backends.mps.is_available():
+        torch.mps.synchronize()
     t0 = time.perf_counter()
 
     # zero the gradients
@@ -103,7 +106,10 @@ for epoch in range(n_epoch):
     # update parameters 
     optimizer.step()
 
-    torch.mps.synchronize()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+    elif torch.backends.mps.is_available():
+        torch.mps.synchronize()
     t1 = time.perf_counter()
     dt = t1-t0
     tokens_per_sec = (micro_batch_size * block_size * grad_accum_steps) / dt

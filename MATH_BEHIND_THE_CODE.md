@@ -737,3 +737,107 @@ The tradeoff is that routing introduces extra complexity: the model must decide 
 Without load balancing, the router can collapse onto a small number of experts. Then most experts receive little or no training signal, and the active experts become overloaded.
 
 The load-balancing term encourages two things to agree: how much probability mass the router assigns to each expert, and how many selected token assignments each expert actually receives. This pushes the model toward using the expert pool more evenly.
+
+### Why Weight Tying?
+
+The model uses the same matrix for token embedding and unembedding. The embedding table maps token ids into hidden vectors, while the transposed same matrix maps hidden vectors back to vocabulary logits.
+
+This reduces the number of parameters and forces the input-token geometry and output-token geometry to share the same representation space.
+
+### Where and Why RMSNorm Is Used
+
+RMSNorm is used wherever the model wants to control the scale of a representation before an important learned transformation. In the transformer blocks, it is used before attention:
+
+$$
+\mathrm{Attention}(\mathrm{RMSNorm}(X)).
+$$
+
+This gives the attention projections inputs with a stable magnitude while keeping the residual path itself as a direct identity path.
+
+It is also used before MoE:
+
+$$
+\mathrm{MoE}(\mathrm{RMSNorm}(Y)).
+$$
+
+This is important because the router and experts are sensitive to input scale. If the hidden vectors entering MoE grow too large or too small, routing logits and expert activations can become poorly scaled.
+
+RMSNorm is also used on the latent representation inside attention:
+
+$$
+L = \mathrm{RMSNorm}(L_{\text{pre}}).
+$$
+
+Here it stabilizes the compressed key/value latent space before that latent vector is expanded into non-rotary keys and values.
+
+Finally, RMSNorm is used before unembedding:
+
+$$
+\widetilde{X} = \mathrm{RMSNorm}(X_{\text{hidden}}^{(n_{\text{layers}})}).
+$$
+
+This controls the scale of the final hidden vectors before they are projected into vocabulary logits.
+
+RMSNorm is not applied after every operation because normalization is not free and too much normalization can interfere with the residual stream. The model mainly normalizes before large learned transformations, while leaving residual additions themselves unnormalized so information and gradients can flow directly through the network.
+
+### Why Latent Key/Value Representations?
+
+Instead of directly producing all key and value information from the full hidden dimension, the model first compresses the hidden state into
+
+$$
+L \in \mathbb{R}^{B \times T \times d_{\text{latent}}}.
+$$
+
+The non-rotary keys and values are then produced from this smaller latent representation. This makes the key/value pathway more compact and is especially useful for inference, where past key/value information may be stored in a cache.
+
+The tradeoff is that $d_{\text{latent}}$ becomes a bottleneck: it saves memory and parameters, but it also limits how much information can pass through the latent key/value path.
+
+### Why Split RoPE and NoPE Dimensions?
+
+The attention head is split as
+
+$$
+d_{\text{head}} = d_{\text{nope}} + d_{\text{rope}}.
+$$
+
+The RoPE dimensions carry position-aware information, while the NoPE dimensions remain unrotated. This lets the model mix two kinds of similarity: content similarity that is not directly position-rotated, and position-aware similarity through RoPE.
+
+Using RoPE on only part of the head also reduces the amount of rotary computation.
+
+### Why Share the RoPE Key Across Heads?
+
+The query has a separate RoPE component for each head, but the rotary key is produced with only one head dimension and then shared across all heads.
+
+This reduces the amount of key-side positional information that must be produced and stored. Each head still has its own query, but they compare against a shared positional key component.
+
+### Why Top-$k$ Routing?
+
+Using all experts for every token would turn MoE back into a very expensive dense ensemble. Top-$k$ routing keeps the computation sparse:
+
+$$
+\text{each token uses only } k \text{ experts}.
+$$
+
+This gives the model access to many expert parameters while keeping per-token compute closer to a small number of MLPs.
+
+### Why Expert Capacity?
+
+Routing can be uneven: many tokens might choose the same expert. Expert capacity puts a limit on how many routed token slots each expert processes.
+
+This keeps computation bounded and makes the packed expert tensors have predictable shapes. The tradeoff is that if an expert receives too many assignments, some lower-weight assignments are dropped.
+
+### Why Gated Experts?
+
+Each expert uses a gated MLP:
+
+$$
+\left(xW_{\text{up}}\right) \odot \mathrm{SiLU}(xW_{\text{gate}}).
+$$
+
+The gate controls which intermediate features are emphasized for each token. Compared with a plain MLP, the multiplicative interaction gives the expert a richer way to modulate features before projecting back to the hidden dimension.
+
+### Why No Bias in Many Linear Layers?
+
+Many projections use no bias. In attention and routing, this keeps the transformations slightly simpler and centered around learned linear geometry.
+
+In the expert MLPs, no bias is also useful for the packed-capacity implementation: padded expert slots contain zeros, and without bias those padded slots produce zero contribution instead of accidentally producing nonzero expert outputs.

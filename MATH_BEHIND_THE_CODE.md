@@ -31,9 +31,7 @@ $$
 More explicitly, for every batch index $b$, token position $t$, and embedding coordinate $c$,
 
 $$
-X_{\text{hidden}}^{(0),b,t,c}
-=
-W_{\text{token embedding table}}^{X_{\text{token ids}}^{b,t},\ c}.
+X_{\text{hidden}}^{(0),b,t,c} = W_{\text{token embedding table}}^{X_{\text{token ids}}^{b,t},\ c}.
 $$
 
 So the token id $X_{\text{token ids}}^{b,t}$ selects a row of the embedding table, and that selected row becomes the initial hidden vector at position $(b,t)$.
@@ -63,19 +61,19 @@ $$
 In this model, each block uses pre-normalization:
 
 $$
+\begin{aligned}
 Y^{(i)}
-=
-X_{\text{hidden}}^{(i)}
-+
-\operatorname{Attention}(\operatorname{RMSNorm}(X_{\text{hidden}}^{(i)})),
+&= X_{\text{hidden}}^{(i)}
++ \mathrm{Attention}(\mathrm{RMSNorm}(X_{\text{hidden}}^{(i)})).
+\end{aligned}
 $$
 
 $$
+\begin{aligned}
 X_{\text{hidden}}^{(i+1)}
-=
-Y^{(i)}
-+
-\operatorname{MoE}(\operatorname{RMSNorm}(Y^{(i)})).
+&= Y^{(i)}
++ \mathrm{MoE}(\mathrm{RMSNorm}(Y^{(i)})).
+\end{aligned}
 $$
 
 So the layer function $F_i$ is built from RMSNorm, multi-head latent attention, residual addition, and a mixture-of-experts feedforward transformation. We analyze these pieces one at a time.
@@ -91,17 +89,13 @@ $$
 the root mean square is
 
 $$
-\operatorname{RMS}(x)
-=
-\sqrt{\frac{1}{d_{\text{hidden}}}\sum_{c=1}^{d_{\text{hidden}}} x_c^2 + \epsilon}.
+\mathrm{RMS}(x) = \sqrt{\frac{1}{d_{\text{hidden}}}\sum_{c=1}^{d_{\text{hidden}}} x_c^2 + \epsilon}.
 $$
 
 Then RMSNorm computes
 
 $$
-\operatorname{RMSNorm}(x)_c
-=
-g_c \frac{x_c}{\operatorname{RMS}(x)},
+\mathrm{RMSNorm}(x)_c = g_c \frac{x_c}{\mathrm{RMS}(x)},
 $$
 
 where
@@ -115,7 +109,7 @@ is a learned scale vector. For a full batch, RMSNorm acts independently on each 
 $$
 X \in \mathbb{R}^{B \times T \times d_{\text{hidden}}}
 \longrightarrow
-\operatorname{RMSNorm}(X) \in \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
+\mathrm{RMSNorm}(X) \in \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
 $$
 
 Unlike LayerNorm, RMSNorm does not subtract the mean. It only controls the vector magnitude. This keeps the scale of the residual stream more stable while preserving the direction of the hidden vector. In this model, RMSNorm is used before attention and before MoE, so each sublayer receives inputs with a controlled scale before applying large learned transformations.
@@ -160,11 +154,11 @@ The name `nope` means "no positional encoding": this part of the query/key vecto
 Before RoPE is applied, the query is projected into these two pieces separately:
 
 $$
+\begin{aligned}
 Q_{\text{nope}}
-=
-\operatorname{reshape}(XW_{Q,\text{nope}})
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{nope}}},
+&= \mathrm{reshape}(XW_{Q,\text{nope}}) \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{nope}}},
+\end{aligned}
 $$
 
 where
@@ -178,11 +172,11 @@ $$
 and
 
 $$
+\begin{aligned}
 Q_{\text{rope, pre}}
-=
-\operatorname{reshape}(XW_{Q,\text{rope}})
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}},
+&= \mathrm{reshape}(XW_{Q,\text{rope}}) \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}},
+\end{aligned}
 $$
 
 where
@@ -196,11 +190,11 @@ $$
 The key also has a rotary part, but unlike the query RoPE projection, this rotary key is shared across heads before being expanded later:
 
 $$
+\begin{aligned}
 K_{\text{rope, pre}}
-=
-\operatorname{reshape}(XW_{K,\text{rope}})
-\in
-\mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}},
+&= \mathrm{reshape}(XW_{K,\text{rope}}) \\
+&\in \mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}},
+\end{aligned}
 $$
 
 where
@@ -214,11 +208,11 @@ $$
 The non-rotary key and the value do not come directly from $X$. Instead, the model first compresses $X$ into a latent representation:
 
 $$
+\begin{aligned}
 L_{\text{pre}}
-=
-XW_L
-\in
-\mathbb{R}^{B \times T \times d_{\text{latent}}},
+&= XW_L \\
+&\in \mathbb{R}^{B \times T \times d_{\text{latent}}},
+\end{aligned}
 $$
 
 where
@@ -232,9 +226,7 @@ $$
 This latent vector is then RMS-normalized:
 
 $$
-L
-=
-\operatorname{RMSNorm}(L_{\text{pre}}).
+L = \mathrm{RMSNorm}(L_{\text{pre}}).
 $$
 
 This is the "latent" part of multi-head latent attention: instead of storing or deriving all key/value information directly at full hidden width, the model first stores a smaller latent state of width $d_{\text{latent}}$. Later, this latent state is expanded into the non-rotary keys and values.
@@ -242,11 +234,11 @@ This is the "latent" part of multi-head latent attention: instead of storing or 
 From this normalized latent representation, the non-rotary key is produced:
 
 $$
+\begin{aligned}
 K_{\text{nope}}
-=
-\operatorname{reshape}(LW_{K,\text{nope}})
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{nope}}},
+&= \mathrm{reshape}(LW_{K,\text{nope}}) \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{nope}}},
+\end{aligned}
 $$
 
 where
@@ -260,11 +252,11 @@ $$
 The value vectors are also produced from the same latent representation:
 
 $$
+\begin{aligned}
 V_{\text{attn}}
-=
-\operatorname{reshape}(LW_V)
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}},
+&= \mathrm{reshape}(LW_V) \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}},
+\end{aligned}
 $$
 
 where
@@ -341,11 +333,12 @@ $$
 RoPE rotates each pair by the position-dependent angle $\phi_{t,m}$:
 
 $$
+\begin{aligned}
 \begin{bmatrix}
 z'_{t,2m} \\
 z'_{t,2m+1}
 \end{bmatrix}
-=
+&=
 \begin{bmatrix}
 \cos(\phi_{t,m}) & -\sin(\phi_{t,m}) \\
 \sin(\phi_{t,m}) & \cos(\phi_{t,m})
@@ -354,44 +347,37 @@ z'_{t,2m+1}
 z_{t,2m} \\
 z_{t,2m+1}
 \end{bmatrix}.
+\end{aligned}
 $$
 
 Equivalently,
 
 $$
-z'_{t,2m}
-=
-z_{t,2m}\cos(\phi_{t,m})
--
-z_{t,2m+1}\sin(\phi_{t,m}),
+z'_{t,2m} = z_{t,2m}\cos(\phi_{t,m}) - z_{t,2m+1}\sin(\phi_{t,m}),
 $$
 
 $$
-z'_{t,2m+1}
-=
-z_{t,2m}\sin(\phi_{t,m})
-+
-z_{t,2m+1}\cos(\phi_{t,m}).
+z'_{t,2m+1} = z_{t,2m}\sin(\phi_{t,m}) + z_{t,2m+1}\cos(\phi_{t,m}).
 $$
 
 Applying this rotation to the query and key rotary parts gives
 
 $$
+\begin{aligned}
 Q_{\text{rope}}
-=
-\operatorname{RoPE}(Q_{\text{rope, pre}})
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}},
+&= \mathrm{RoPE}(Q_{\text{rope, pre}}) \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}},
+\end{aligned}
 $$
 
 and
 
 $$
+\begin{aligned}
 K_{\text{rope}}
-=
-\operatorname{RoPE}(K_{\text{rope, pre}})
-\in
-\mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}}.
+&= \mathrm{RoPE}(K_{\text{rope, pre}}) \\
+&\in \mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}}.
+\end{aligned}
 $$
 
 RoPE injects position without adding a separate position vector to $X$. Instead, it makes the query-key dot product depend on relative position through rotations of the query and key coordinate pairs.
@@ -444,19 +430,19 @@ $$
 Then the non-rotary and rotary parts are concatenated:
 
 $$
+\begin{aligned}
 Q
-=
-\operatorname{concat}(Q_{\text{nope}}, Q_{\text{rope}})
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}},
+&= \mathrm{concat}(Q_{\text{nope}}, Q_{\text{rope}}) \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}},
+\end{aligned}
 $$
 
 $$
+\begin{aligned}
 K
-=
-\operatorname{concat}(K_{\text{nope}}, \widetilde{K}_{\text{rope}})
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
+&= \mathrm{concat}(K_{\text{nope}}, \widetilde{K}_{\text{rope}}) \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
+\end{aligned}
 $$
 
 The values were already constructed from the latent representation:
@@ -470,11 +456,11 @@ $$
 For each head, attention computes the scaled query-key similarity matrix:
 
 $$
+\begin{aligned}
 S
-=
-\frac{QK^T}{\sqrt{d_{\text{head}}}}
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times T}.
+&= \frac{QK^T}{\sqrt{d_{\text{head}}}} \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times T}.
+\end{aligned}
 $$
 
 The factor $\frac{1}{\sqrt{d_{\text{head}}}}$ controls the variance of the dot products. If the query and key coordinates have roughly constant variance, then their dot product is a sum of $d_{\text{head}}$ terms, so its variance grows like $O(d_{\text{head}})$. Without scaling, larger head dimensions would produce larger attention logits, pushing the softmax into a saturated regime where one token gets almost all the probability mass and gradients become less useful.
@@ -488,40 +474,33 @@ $$
 Then attention weights are computed with softmax:
 
 $$
+\begin{aligned}
 A
-=
-\operatorname{softmax}(S)
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times T}.
+&= \mathrm{softmax}(S) \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times T}.
+\end{aligned}
 $$
 
 The attention output is the weighted sum of values:
 
 $$
+\begin{aligned}
 O
-=
-AV_{\text{attn}}
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
+&= AV_{\text{attn}} \\
+&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
+\end{aligned}
 $$
 
 The heads are then rearranged back into the hidden dimension:
 
 $$
-O_{\text{merged}}
-\in
-\mathbb{R}^{B \times T \times (n_{\text{heads}}d_{\text{head}})}
-=
-\mathbb{R}^{B \times T \times d_{\text{hidden}}}.
+O_{\text{merged}} \in \mathbb{R}^{B \times T \times (n_{\text{heads}}d_{\text{head}})} = \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
 $$
 
 Finally, the model applies an output mixing projection and dropout:
 
 $$
-\operatorname{Attention}(X)
-=
-\operatorname{Dropout}(O_{\text{merged}}W_O) \in
-\mathbb{R}^{B \times T \times d_{\text{hidden}}},
+\mathrm{Attention}(X) = \mathrm{Dropout}(O_{\text{merged}}W_O) \in \mathbb{R}^{B \times T \times d_{\text{hidden}}},
 $$
 
 where
@@ -578,7 +557,7 @@ $$
 The router probabilities are
 
 $$
-P = \operatorname{softmax}(R)
+P = \mathrm{softmax}(R)
 \in
 \mathbb{R}^{N \times E}.
 $$
@@ -586,30 +565,27 @@ $$
 For each token $i$, only the top $k = n_{\text{top experts}}$ experts are selected:
 
 $$
-\mathcal{E}_i
-=
-\operatorname{TopK}(P_i, k).
+\mathcal{E}_i = \mathrm{TopK}(P_i, k).
 $$
 
 The selected expert weights are renormalized over only the chosen experts:
 
 $$
-\alpha_{i,e}
-=
-\frac{P_{i,e}}{\sum_{e' \in \mathcal{E}_i} P_{i,e'}}
-\qquad
-\text{for } e \in \mathcal{E}_i.
+\alpha_{i,e} = \frac{P_{i,e}}{\sum_{e' \in \mathcal{E}_i} P_{i,e'}}
+\qquad \text{for } e \in \mathcal{E}_i.
 $$
 
 Each expert is a gated feedforward network. For expert $e$, with input token vector $x_i \in \mathbb{R}^{d_{\text{hidden}}}$,
 
 $$
-\operatorname{Expert}_e(x_i)
-=
+\begin{aligned}
+\mathrm{Expert}_e(x_i)
+&=
 \left[\left(x_i W_{e,\text{up}}\right)
 \odot
-\operatorname{SiLU}\left(x_i W_{e,\text{gate}}\right)\right]
+\mathrm{SiLU}\left(x_i W_{e,\text{gate}}\right)\right]
 W_{e,\text{down}},
+\end{aligned}
 $$
 
 where
@@ -631,16 +607,13 @@ $$
 The final MoE output for token $i$ is the weighted sum of its selected expert outputs:
 
 $$
-y_i
-=
-\sum_{e \in \mathcal{E}_i}
-\alpha_{i,e}\operatorname{Expert}_e(x_i).
+y_i = \sum_{e \in \mathcal{E}_i} \alpha_{i,e}\mathrm{Expert}_e(x_i).
 $$
 
 After reshaping back to batch and sequence form, the MoE output is
 
 $$
-\operatorname{MoE}(X)
+\mathrm{MoE}(X)
 \in
 \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
 $$
@@ -648,13 +621,7 @@ $$
 The implementation uses a capacity per expert:
 
 $$
-C_{\text{expert}}
-=
-\left\lfloor
-\text{capacity factor}
-\cdot
-\frac{Nk}{E}
-\right\rfloor.
+C_{\text{expert}} = \left\lfloor \text{capacity factor} \cdot \frac{Nk}{E} \right\rfloor.
 $$
 
 This means each expert processes at most $C_{\text{expert}}$ routed token slots. If too many tokens are routed to one expert, only the highest-weight assignments are kept for that expert.
@@ -674,9 +641,7 @@ $$
 be the fraction of selected expert assignments that go to expert $e$. The load-balancing term is
 
 $$
-\mathcal{L}_{\text{load}}
-=
-E \sum_{e=1}^{E} p_e f_e.
+\mathcal{L}_{\text{load}} = E \sum_{e=1}^{E} p_e f_e.
 $$
 
 This discourages the router from collapsing onto only a few experts.
@@ -703,11 +668,11 @@ $$
 A final RMSNorm is applied:
 
 $$
+\begin{aligned}
 \widetilde{X}
-=
-\operatorname{RMSNorm}(X_{\text{hidden}}^{(n_{\text{layers}})})
-\in
-\mathbb{R}^{B \times T \times d_{\text{hidden}}}.
+&= \mathrm{RMSNorm}(X_{\text{hidden}}^{(n_{\text{layers}})}) \\
+&\in \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
+\end{aligned}
 $$
 
 Then the model maps each hidden vector back to vocabulary space. Since the token embedding table has shape
@@ -721,11 +686,11 @@ $$
 and the model ties the unembedding weights to the embedding weights, the vocabulary logits are
 
 $$
+\begin{aligned}
 Z
-=
-\widetilde{X}W_{\text{token embedding table}}^T
-\in
-\mathbb{R}^{B \times T \times V}.
+&= \widetilde{X}W_{\text{token embedding table}}^T \\
+&\in \mathbb{R}^{B \times T \times V}.
+\end{aligned}
 $$
 
 For each position $(b,t)$, the vector
@@ -745,30 +710,24 @@ $$
 where $Y^{b,t}$ is the correct next token id for position $(b,t)$. The cross-entropy loss is
 
 $$
+\begin{aligned}
 \mathcal{L}_{\text{CE}}
-=
--
-\frac{1}{BT}
+&=
+-\frac{1}{BT}
 \sum_{b=1}^{B}
 \sum_{t=1}^{T}
 \log
 \left(
-\frac{
-\exp(Z^{b,t,Y^{b,t}})
-}{
-\sum_{v=1}^{V}\exp(Z^{b,t,v})
-}
+\frac{\exp(Z^{b,t,Y^{b,t}})}
+{\sum_{v=1}^{V}\exp(Z^{b,t,v})}
 \right).
+\end{aligned}
 $$
 
 The full training loss also includes the MoE load-balancing penalty:
 
 $$
-\mathcal{L}
-=
-\mathcal{L}_{\text{CE}}
-+
-\lambda_{\text{load}}\mathcal{L}_{\text{load}},
+\mathcal{L} = \mathcal{L}_{\text{CE}} + \lambda_{\text{load}}\mathcal{L}_{\text{load}},
 $$
 
 where $\lambda_{\text{load}}$ controls the strength of the load-balancing term.

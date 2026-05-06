@@ -152,63 +152,43 @@ $$
 where
 
 $$
-W_{Q,\text{nope}}
-\in
-\mathbb{R}^{d_{\text{hidden}} \times (n_{\text{heads}}d_{\text{nope}})},
+W_{Q,\text{nope}} \in \mathbb{R}^{d_{\text{hidden}} \times (n_{\text{heads}}d_{\text{nope}})},
 $$
 
 and
 
 $$
-\begin{aligned}
-Q_{\text{rope, pre}}
-&= \mathrm{reshape}(XW_{Q,\text{rope}}) \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}},
-\end{aligned}
+Q_{\text{rope, pre}} = \mathrm{reshape}(XW_{Q,\text{rope}}) \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}},
 $$
 
 where
 
 $$
-W_{Q,\text{rope}}
-\in
-\mathbb{R}^{d_{\text{hidden}} \times (n_{\text{heads}}d_{\text{rope}})}.
+W_{Q,\text{rope}} \in \mathbb{R}^{d_{\text{hidden}} \times (n_{\text{heads}}d_{\text{rope}})}.
 $$
 
 The key also has a rotary part, but unlike the query RoPE projection, this rotary key is shared across heads before being expanded later:
 
 $$
-\begin{aligned}
-K_{\text{rope, pre}}
-&= \mathrm{reshape}(XW_{K,\text{rope}}) \\
-&\in \mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}},
-\end{aligned}
+K_{\text{rope, pre}} = \mathrm{reshape}(XW_{K,\text{rope}}) \in \mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}},
 $$
 
 where
 
 $$
-W_{K,\text{rope}}
-\in
-\mathbb{R}^{d_{\text{hidden}} \times d_{\text{rope}}}.
+W_{K,\text{rope}} \in \mathbb{R}^{d_{\text{hidden}} \times d_{\text{rope}}}.
 $$
 
 The non-rotary key and the value do not come directly from $X$. Instead, the model first compresses $X$ into a latent representation:
 
 $$
-\begin{aligned}
-L_{\text{pre}}
-&= XW_L \\
-&\in \mathbb{R}^{B \times T \times d_{\text{latent}}},
-\end{aligned}
+L_{\text{pre}} = XW_L \in \mathbb{R}^{B \times T \times d_{\text{latent}}},
 $$
 
 where
 
 $$
-W_L
-\in
-\mathbb{R}^{d_{\text{hidden}} \times d_{\text{latent}}}.
+W_L \in \mathbb{R}^{d_{\text{hidden}} \times d_{\text{latent}}}.
 $$
 
 This latent vector is then RMS-normalized:
@@ -222,37 +202,25 @@ This is the "latent" part of multi-head latent attention: instead of storing or 
 From this normalized latent representation, the non-rotary key is produced:
 
 $$
-\begin{aligned}
-K_{\text{nope}}
-&= \mathrm{reshape}(LW_{K,\text{nope}}) \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{nope}}},
-\end{aligned}
+K_{\text{nope}} = \mathrm{reshape}(LW_{K,\text{nope}}) \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{nope}}},
 $$
 
 where
 
 $$
-W_{K,\text{nope}}
-\in
-\mathbb{R}^{d_{\text{latent}} \times (n_{\text{heads}}d_{\text{nope}})}.
+W_{K,\text{nope}} \in \mathbb{R}^{d_{\text{latent}} \times (n_{\text{heads}}d_{\text{nope}})}.
 $$
 
 The value vectors are also produced from the same latent representation:
 
 $$
-\begin{aligned}
-V_{\text{attn}}
-&= \mathrm{reshape}(LW_V) \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}},
-\end{aligned}
+V_{\text{attn}} = \mathrm{reshape}(LW_V) \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}},
 $$
 
 where
 
 $$
-W_V
-\in
-\mathbb{R}^{d_{\text{latent}} \times (n_{\text{heads}}d_{\text{head}})}.
+W_V \in \mathbb{R}^{d_{\text{latent}} \times (n_{\text{heads}}d_{\text{head}})}.
 $$
 
 So before applying RoPE, the attention layer has constructed:
@@ -351,21 +319,13 @@ $$
 Applying this rotation to the query and key rotary parts gives
 
 $$
-\begin{aligned}
-Q_{\text{rope}}
-&= \mathrm{RoPE}(Q_{\text{rope, pre}}) \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}},
-\end{aligned}
+Q_{\text{rope}} = \mathrm{RoPE}(Q_{\text{rope, pre}}) \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}},
 $$
 
 and
 
 $$
-\begin{aligned}
-K_{\text{rope}}
-&= \mathrm{RoPE}(K_{\text{rope, pre}}) \\
-&\in \mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}}.
-\end{aligned}
+K_{\text{rope}} = \mathrm{RoPE}(K_{\text{rope, pre}}) \in \mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}}.
 $$
 
 RoPE injects position without adding a separate position vector to $X$. Instead, it makes the query-key dot product depend on relative position through rotations of the query and key coordinate pairs.
@@ -392,17 +352,13 @@ $$
 The query already has a separate RoPE part for each head:
 
 $$
-Q_{\text{rope}}
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}}.
+Q_{\text{rope}} \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}}.
 $$
 
 The rotary key was produced with only one head dimension:
 
 $$
-K_{\text{rope}}
-\in
-\mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}}.
+K_{\text{rope}} \in \mathbb{R}^{B \times 1 \times T \times d_{\text{rope}}}.
 $$
 
 So the rotary key is shared across heads by expanding it:
@@ -410,45 +366,29 @@ So the rotary key is shared across heads by expanding it:
 $$
 K_{\text{rope}}
 \longrightarrow
-\widetilde{K}_{\text{rope}}
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}}.
+\widetilde{K}_{\text{rope}} \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{rope}}}.
 $$
 
 Then the non-rotary and rotary parts are concatenated:
 
 $$
-\begin{aligned}
-Q
-&= \mathrm{concat}(Q_{\text{nope}}, Q_{\text{rope}}) \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}},
-\end{aligned}
+Q = \mathrm{concat}(Q_{\text{nope}}, Q_{\text{rope}}) \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}},
 $$
 
 $$
-\begin{aligned}
-K
-&= \mathrm{concat}(K_{\text{nope}}, \widetilde{K}_{\text{rope}}) \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
-\end{aligned}
+K = \mathrm{concat}(K_{\text{nope}}, \widetilde{K}_{\text{rope}}) \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
 $$
 
 The values were already constructed from the latent representation:
 
 $$
-V_{\text{attn}}
-\in
-\mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
+V_{\text{attn}} \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
 $$
 
 For each head, attention computes the scaled query-key similarity matrix:
 
 $$
-\begin{aligned}
-S
-&= \frac{QK^T}{\sqrt{d_{\text{head}}}} \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times T}.
-\end{aligned}
+S = \frac{QK^T}{\sqrt{d_{\text{head}}}} \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times T}.
 $$
 
 The factor $\frac{1}{\sqrt{d_{\text{head}}}}$ controls the variance of the dot products. If the query and key coordinates have roughly constant variance, then their dot product is a sum of $d_{\text{head}}$ terms, so its variance grows like $O(d_{\text{head}})$. Without scaling, larger head dimensions would produce larger attention logits, pushing the softmax into a saturated regime where one token gets almost all the probability mass and gradients become less useful.
@@ -462,21 +402,13 @@ $$
 Then attention weights are computed with softmax:
 
 $$
-\begin{aligned}
-A
-&= \mathrm{softmax}(S) \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times T}.
-\end{aligned}
+A = \mathrm{softmax}(S) \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times T}.
 $$
 
 The attention output is the weighted sum of values:
 
 $$
-\begin{aligned}
-O
-&= AV_{\text{attn}} \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
-\end{aligned}
+O = AV_{\text{attn}} \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{head}}}.
 $$
 
 The heads are then rearranged back into the hidden dimension:
@@ -531,9 +463,7 @@ $$
 The router assigns each token a distribution over $E = n_{\text{experts}}$ experts. First it computes router scores:
 
 $$
-R = X_{\text{flat}}W_R
-\in
-\mathbb{R}^{N \times E},
+R = X_{\text{flat}}W_R \in \mathbb{R}^{N \times E},
 $$
 
 where
@@ -545,9 +475,7 @@ $$
 The router probabilities are
 
 $$
-P = \mathrm{softmax}(R)
-\in
-\mathbb{R}^{N \times E}.
+P = \mathrm{softmax}(R) \in \mathbb{R}^{N \times E}.
 $$
 
 For each token $i$, only the top $k = n_{\text{top experts}}$ experts are selected:
@@ -579,17 +507,13 @@ $$
 where
 
 $$
-W_{e,\text{up}}, W_{e,\text{gate}}
-\in
-\mathbb{R}^{d_{\text{hidden}} \times d_{\text{intermediate}}},
+W_{e,\text{up}}, W_{e,\text{gate}} \in \mathbb{R}^{d_{\text{hidden}} \times d_{\text{intermediate}}},
 $$
 
 and
 
 $$
-W_{e,\text{down}}
-\in
-\mathbb{R}^{d_{\text{intermediate}} \times d_{\text{hidden}}}.
+W_{e,\text{down}} \in \mathbb{R}^{d_{\text{intermediate}} \times d_{\text{hidden}}}.
 $$
 
 The final MoE output for token $i$ is the weighted sum of its selected expert outputs:
@@ -601,9 +525,7 @@ $$
 After reshaping back to batch and sequence form, the MoE output is
 
 $$
-\mathrm{MoE}(X)
-\in
-\mathbb{R}^{B \times T \times d_{\text{hidden}}}.
+\mathrm{MoE}(X) \in \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
 $$
 
 The implementation uses a capacity per expert:
@@ -648,37 +570,25 @@ The main idea is that MoE increases parameter capacity by having many experts, b
 After all transformer blocks, the model has the final hidden state
 
 $$
-X_{\text{hidden}}^{(n_{\text{layers}})}
-\in
-\mathbb{R}^{B \times T \times d_{\text{hidden}}}.
+X_{\text{hidden}}^{(n_{\text{layers}})} \in \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
 $$
 
 A final RMSNorm is applied:
 
 $$
-\begin{aligned}
-\widetilde{X}
-&= \mathrm{RMSNorm}(X_{\text{hidden}}^{(n_{\text{layers}})}) \\
-&\in \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
-\end{aligned}
+\widetilde{X} = \mathrm{RMSNorm}(X_{\text{hidden}}^{(n_{\text{layers}})}) \in \mathbb{R}^{B \times T \times d_{\text{hidden}}}.
 $$
 
 Then the model maps each hidden vector back to vocabulary space. Since the token embedding table has shape
 
 $$
-W_{\text{token embedding table}}
-\in
-\mathbb{R}^{V \times d_{\text{hidden}}},
+W_{\text{token embedding table}} \in \mathbb{R}^{V \times d_{\text{hidden}}},
 $$
 
 and the model ties the unembedding weights to the embedding weights, the vocabulary logits are
 
 $$
-\begin{aligned}
-Z
-&= \widetilde{X}W_{\text{token embedding table}}^T \\
-&\in \mathbb{R}^{B \times T \times V}.
-\end{aligned}
+Z = \widetilde{X}W_{\text{token embedding table}}^T \in \mathbb{R}^{B \times T \times V}.
 $$
 
 For each position $(b,t)$, the vector

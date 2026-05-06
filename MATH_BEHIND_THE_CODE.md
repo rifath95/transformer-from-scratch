@@ -61,19 +61,11 @@ $$
 In this model, each block uses pre-normalization:
 
 $$
-\begin{aligned}
-Y^{(i)}
-&= X_{\text{hidden}}^{(i)}
-+ \mathrm{Attention}(\mathrm{RMSNorm}(X_{\text{hidden}}^{(i)})).
-\end{aligned}
+Y^{(i)} = X_{\text{hidden}}^{(i)} + \mathrm{Attention}(\mathrm{RMSNorm}(X_{\text{hidden}}^{(i)})).
 $$
 
 $$
-\begin{aligned}
-X_{\text{hidden}}^{(i+1)}
-&= Y^{(i)}
-+ \mathrm{MoE}(\mathrm{RMSNorm}(Y^{(i)})).
-\end{aligned}
+X_{\text{hidden}}^{(i+1)} = Y^{(i)} + \mathrm{MoE}(\mathrm{RMSNorm}(Y^{(i)})).
 $$
 
 So the layer function $F_i$ is built from RMSNorm, multi-head latent attention, residual addition, and a mixture-of-experts feedforward transformation. We analyze these pieces one at a time.
@@ -154,11 +146,7 @@ The name `nope` means "no positional encoding": this part of the query/key vecto
 Before RoPE is applied, the query is projected into these two pieces separately:
 
 $$
-\begin{aligned}
-Q_{\text{nope}}
-&= \mathrm{reshape}(XW_{Q,\text{nope}}) \\
-&\in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{nope}}},
-\end{aligned}
+Q_{\text{nope}} = \mathrm{reshape}(XW_{Q,\text{nope}}) \in \mathbb{R}^{B \times n_{\text{heads}} \times T \times d_{\text{nope}}},
 $$
 
 where

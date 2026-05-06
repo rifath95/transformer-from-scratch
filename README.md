@@ -14,11 +14,12 @@ A GPT-style decoder-only transformer implemented from scratch in PyTorch, includ
 ## Repository Structure
 
     .
-    ├── model.py              # Transformer architecture, attention variants, MoE
+    ├── model.py  #Transformer architecture, attention variants, MoE
     ├── train.py              # Training loop
     ├── sample.py             # Autoregressive text generation
     ├── config.py             # Hyperparameters
     ├── data.py               # Data loading and batching
+    ├── MATH_BEHIND_THE_CODE.md # Mathematical analysis
     ├── tinyShakespeare.txt   # Training dataset
     ├── README.md
 
@@ -63,6 +64,8 @@ Implements a sparse MoE layer with:
 ## Notes
 
 This project was built to understand and implement modern large language model architectures from first principles, without relying on high-level abstractions.
+
+For a deeper analytical walkthrough of the architecture, see [`MATH_BEHIND_THE_CODE.md`](MATH_BEHIND_THE_CODE.md), which breaks down the model into equations, tensor shapes, scaling factors, complexity, and design choices.
 
 ## Sample Output
 

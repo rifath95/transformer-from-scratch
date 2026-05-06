@@ -637,3 +637,103 @@ Time complexity:
 - Cross entropy over vocabulary: $O(BT V)$
 
 The unembedding is expensive when $V$ is large because every token position produces a score for every vocabulary item.
+
+## Design Choices and Deeper Explanations
+
+### Why Residual Connections?
+
+Each transformer block updates the residual stream by adding learned changes to it:
+
+$$
+X \longmapsto X + f(X).
+$$
+
+In this model, each block has two residual updates:
+
+$$
+Y^{(i)} = X_{\text{hidden}}^{(i)} + \mathrm{Attention}(\mathrm{RMSNorm}(X_{\text{hidden}}^{(i)})),
+$$
+
+$$
+X_{\text{hidden}}^{(i+1)} = Y^{(i)} + \mathrm{MoE}(\mathrm{RMSNorm}(Y^{(i)})).
+$$
+
+The residual path gives information and gradients a direct route through the network. Instead of forcing every layer to completely rewrite the representation, each sublayer can learn an update $\Delta X$ to the existing representation.
+
+### Why Residual Scaling?
+
+Because residual branches are repeatedly added, their variances can accumulate with depth. If each branch contributes a roughly independent update with similar variance, then after many residual additions the residual stream can grow in scale.
+
+This model has two residual branches per layer: one attention branch and one MoE branch. Across $n_{\text{layers}}$ layers, that gives roughly
+
+$$
+2n_{\text{layers}}
+$$
+
+residual-producing branches. To control the initial scale of these added updates, the output projections on residual branches are initialized with the extra factor
+
+$$
+(2n_{\text{layers}})^{-1/2}.
+$$
+
+So if the usual initialization scale is $\sigma$, the residual branch output projection uses
+
+$$
+\sigma_{\text{residual}} = \sigma(2n_{\text{layers}})^{-1/2}.
+$$
+
+The goal is not to remove residual updates, but to make their initial contribution small enough that the residual stream stays well-scaled at the start of training.
+
+### Why Pre-Norm Instead of Post-Norm?
+
+In a pre-norm block, the sublayer receives normalized input, but the residual path itself remains a direct identity path:
+
+$$
+X \longmapsto X + f(\mathrm{RMSNorm}(X)).
+$$
+
+This makes optimization more stable because gradients can flow through the residual addition without having to pass through a normalization operation at every layer. Post-norm can work, but in deeper transformers it is often harder to optimize because the residual path is repeatedly transformed by normalization after each addition.
+
+### Why Scale Attention by $1 / \sqrt{d_{\text{head}}}$?
+
+The query-key score is a dot product:
+
+$$
+q \cdot k = \sum_{c=1}^{d_{\text{head}}} q_c k_c.
+$$
+
+If the coordinates have roughly constant variance, then the variance of this sum grows like $O(d_{\text{head}})$. Dividing by $\sqrt{d_{\text{head}}}$ keeps the score scale roughly stable as the head dimension changes. This prevents the softmax from becoming too sharp just because $d_{\text{head}}$ is large.
+
+### Why Causal Masking?
+
+This is an autoregressive language model, so token position $t$ is trained to predict the next token using only earlier context. The causal mask enforces
+
+$$
+\text{position } t \text{ can attend only to positions } \leq t.
+$$
+
+Without this mask, the model could look at future tokens during training, making the next-token prediction task invalid.
+
+### Why RoPE?
+
+Attention by itself is permutation-equivariant: without positional information, it does not know whether a token came earlier or later in the sequence. RoPE injects position by rotating query and key coordinates as a function of token position.
+
+The important effect is that the dot product between a rotated query and a rotated key depends on their relative positions. So RoPE gives attention a way to reason about distance and order without adding a separate learned position vector to the hidden state.
+
+### Why Dropout?
+
+Dropout randomly removes part of a sublayer's output during training. In this model it is applied after attention output mixing and after the MoE output. This makes the residual updates less brittle: the model cannot rely too heavily on any single activation pathway, which helps regularization.
+
+At inference time, dropout is disabled, so the full learned computation is used.
+
+### Why MoE Instead of a Dense MLP?
+
+A dense MLP applies the same feedforward network to every token. MoE instead contains many expert MLPs, but each token is routed to only $k$ experts. This increases the number of parameters available to the model without making every token pay the compute cost of every expert.
+
+The tradeoff is that routing introduces extra complexity: the model must decide which experts to use, pack tokens by expert, respect capacity limits, and avoid routing collapse.
+
+### Why Load Balancing?
+
+Without load balancing, the router can collapse onto a small number of experts. Then most experts receive little or no training signal, and the active experts become overloaded.
+
+The load-balancing term encourages two things to agree: how much probability mass the router assigns to each expert, and how many selected token assignments each expert actually receives. This pushes the model toward using the expert pool more evenly.
